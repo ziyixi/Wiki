@@ -1,11 +1,11 @@
-# Develop a parallel signal processing tool for seismic data analysis
+# Develop a parallel signal processing tool for seismic data preprocessing
 ### Ziyi Xi
 
 ## Brief Introduction
 
 Seismic signals are usually transient waveforms radiated from a localized natural or manmade
 seismic source. They can be used to locate the source, to analyze source processes, and
-to study the structure of the medium of propagation. But now almost all the processing tools are not paralleled, which may reduce the effiency to analysis this kind of digital signal, so I'm planning to develop a parallel processing tool to handle this problem.
+to study the structure of the medium of propagation. But now almost all the processing tools are not in parallel, which may reduce the effiency to analysis this kind of digital signal, so I'm planning to develop a parallel processing tool to handle this problem.
 
 ## The connection between this project and our class
 
@@ -19,7 +19,7 @@ Here I'd like to discuss each part of widely used seismic signal processing, and
 > #### Time: From now to 11/04.
 
 2. **Remove instrumental response**: 
->Generally the seismic stations store data in electric signal, and we have to convert them to the real seismic signal. That could be represented by a mathematical problem of deconvolution. Since deconvolution could be calculated firstly padding and then do convolution, this problem transfers to convolution problem.
+>Generally the seismic stations store data in electric signal, and we have to convert them to the real seismic signal. That could be represented by a mathematical problem of deconvolution. Since deconvolution could be calculated firstly padding and then do convolution, this problem transfers to the convolution problem.
 
 >According to the julia package [DSP.jl](https://github.com/JuliaDSP/DSP.jl), they have the Algorithm implementation of convolution and deconvolution.
 
@@ -64,42 +64,41 @@ function conv(u::StridedVector{T}, v::StridedVector{T}) where T<:BLAS.BlasFloat
     return y[1:n]
 end
 ```
-> We could see the algorithm could be seprated into non-fft part and fft part. And I may use MPi and CUDA to implement the algorithm seprately in two parts. 
+> We could see the algorithm could be seprated into non-fft part and fft part. And I may use MPi and CUDA to implement the algorithm seprately in two parts, such as using cuFFT.
 > #### time:from 11/04 to 11/07.
 
 3. **Filter**: 
 >Since seismic signal may contain some noise, usually we filter them before further analysis. There are lots of filtering algorithm and design, and I want to design the most widely used ones. Here I could also refer to the [DSP.jl](https://github.com/JuliaDSP/DSP.jl/tree/master/src/Filters), and make its algorithm parallel。
 
->Since I haven't seen how they implement the filtering algorithm, I couldn't give much more information about what exactly my code would look like. But in generous, there should be lots of numerical calculation, and we could always parallel them.
+>Since I haven't read deeply about how they implement the filtering algorithm, I couldn't give much more information about what exactly my code would look like. But in generous, there should be lots of numerical calculation, and we could always parallel them.
 > #### time: 
 
 > #### time:from 11/07 to 11/14. 
 4. **resample**: 
 >For our research, it's meaningful to resample the time series data using methods like interpolation. As for the interpolation algorithm, usually it's a linear algorithm problem, including solving some matrix functions which has very big dimension since our time series usually have a great amout of data points.
 
->So I'm planning to try some built in packages like BLAS or cuBLAS to see how to implement these algorithm. Or just wrap existing packages using MPI or CUDA to parallel them since usually if such the packages haven't linked with MKL, they couldn't be paralleled. I suppose I could have a try at this point.
+>So I'm planning to try some built in packages like BLAS or cuBLAS to see how to implement these algorithm, and further wrap existing packages using MPI or CUDA to parallel them since usually if such the packages haven't linked with MKL, they couldn't be paralleled. I suppose I could have a try at this point.
 
 > #### time: from 11/14 to 11/17
 
 5. **Calculating SNR**: 
->The signal to noise ratio is useful for selecting good data that don't have too much noise, and in geophysics we usually first the data in time domain to frequency domain, and then select the base frequency of data. By calculating to energy of signal and noise in frequency domain, we are able to get the SNR.
+>The signal to noise ratio is useful for selecting good data that don't have too much noise, and in geophysics we usually first convert the data in time domain to frequency domain, and then select the base frequency of data. By calculating to energy of signal and noise in frequency domain, we are able to get the SNR.
 
->So that is just a problem of FFT and some other mathematical calculating. It should be easy to implement in MPI or CUDA.
+>So that is just a problem of FFT and some other mathematical calculating. It should be easy to be implemented in MPI or CUDA.
 
 > #### time: from 11/17 to 11/20
 
 6. **Others**: 
->There are some other processing procedures existing, like the rotation of different components of seismic data. (Usually we have three components data to represent the movement for a seismic siganl receiver.), stacking different seismic waveform to reduce the noise, do correlation for different waveforms and etc.. They need just a little calculation and could easily be paralleled.
+>There are some other processing procedures existing, like the rotation of different components of seismic data. (Usually we have three components data to represent the movement for a seismic siganl receiver.), stacking different seismic waveform to reduce the noise, do correlation for different waveforms and etc.. They need just a little calculation and could easily be adapted to the parallel form.
 
 > #### time: from 11/20 to 11/23
 
 7. **Order them one by one, wrap to packages, including unit test and document**: 
->If we order the processing procedures metioned above into streams like cuda stream, we may improve the efficency. And finally wrap them such like a python package may help us easilly to use them.
+>If we order the processing procedures metioned above into streams like cuda stream, we may improve the efficency. And finally wrap them such like a python package may help us easilly to use the code developed.
 
 > #### time: from 11/23 to 11/26
 
-## Summary
-
+## About the questions in class webpage
 As for the consideration mentioned in the class webpage, I'd like to share my thinking about them:
 1. >Combine two different parallel programming models: distributed memory (i.e., MPI), shared memory (i.e., OpenMP), GPUs (i.e., CUDA or OpenACC).
 
@@ -132,4 +131,4 @@ As for the consideration mentioned in the class webpage, I'd like to share my th
    
 ## Expected Result
 
-I'm planning to develop a Python package which provides both GPU and CPU parallelization which could be used for seismic signal processing. Also I'm planning to seprate the processing parts with the interface for seismic data reading, for further extending to a generic parallel digital signal processing package.
+I'm planning to develop a Python package which provides both GPU and CPU parallelization which could be used for seismic signal processing. Also I'm planning to seprate the processing parts and the interface for seismic data reading, for further extending to a generic parallel digital signal processing package.
